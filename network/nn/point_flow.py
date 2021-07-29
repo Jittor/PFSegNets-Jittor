@@ -4,7 +4,7 @@ from jittor import nn
 
 def point_sample(input, point_coords, **kwargs):
     add_dim = False
-    if (point_coords.dim() == 3):
+    if (point_coords.ndim == 3):
         add_dim = True
         point_coords = point_coords.unsqueeze(2)
     output = nn.grid_sample(input, ((2.0 * point_coords) - 1.0), **kwargs)
@@ -55,8 +55,11 @@ class PointFlowModuleWithMaxAvgpool(nn.Module):
         self.maxpool_size = maxpool_size
         self.avgpool_size = avgpool_size
         self.edge_points = edge_points
-        self.max_pool = nn.AdaptiveMaxPool2d(
-            (maxpool_size, maxpool_size), return_indices=True)
+        # self.max_pool = nn.AdaptiveMaxPool2d(
+        #     (maxpool_size, maxpool_size))
+        self.max_pool1 = nn.MaxPool2d(2, 2, return_indices=True)
+        self.max_pool2 = nn.MaxPool2d(4, 4, return_indices=True)
+        self.max_pool3 = nn.MaxPool2d(8, 8, return_indices=True)
         self.avg_pool = nn.AdaptiveAvgPool2d((avgpool_size, avgpool_size))
         self.edge_final = nn.Sequential(nn.Conv(in_planes, in_planes, 3, padding=1, bias=False), nn.BatchNorm(
             in_planes), nn.ReLU(), nn.Conv(in_planes, 1, 3, padding=1, bias=False))
@@ -85,12 +88,19 @@ class PointFlowModuleWithMaxAvgpool(nn.Module):
         high_edge_feat = point_sample(x_high, point_coords)
         low_edge_feat = point_sample(x_low, point_coords)
         affinity_edge = nn.bmm(high_edge_feat.transpose(
-            2, 1), low_edge_feat).transpose(2, 1)
+            0, 2, 1), low_edge_feat).transpose(0, 2, 1)
         affinity = self.softmax(affinity_edge)
         high_edge_feat = nn.bmm(
-            affinity, high_edge_feat.transpose(2, 1)).transpose(2, 1)
+            affinity, high_edge_feat.transpose(0, 2, 1)).transpose(0, 2, 1)
         fusion_edge_feat = (high_edge_feat + low_edge_feat)
-        (maxpool_grid, maxpool_indices) = self.max_pool(certainty_map)
+        maxpool_grid = None
+        maxpool_indices = None
+        if certainty_map.shape[2] == 28:
+            (maxpool_grid, maxpool_indices) = self.max_pool1(certainty_map)
+        elif certainty_map.shape[2] == 56:
+            (maxpool_grid, maxpool_indices) = self.max_pool2(certainty_map)
+        elif certainty_map.shape[2] == 112:
+            (maxpool_grid, maxpool_indices) = self.max_pool3(certainty_map)
         maxpool_indices = maxpool_indices.expand((- 1), C, (- 1), (- 1))
         maxpool_grid = nn.interpolate(maxpool_grid, size=(
             map_h, map_w), mode='bilinear', align_corners=True)
@@ -109,10 +119,10 @@ class PointFlowModuleWithMaxAvgpool(nn.Module):
         high_features = high_features.view((feat_n, (- 1), (feat_h * feat_w)))
         low_features = low_features.view((feat_n, (- 1), (feat_h * feat_w)))
         affinity = nn.bmm(high_features.transpose(
-            2, 1), low_features).transpose(2, 1)
+            0, 2, 1), low_features).transpose(0, 2, 1)
         affinity = self.softmax(affinity)
         high_features = nn.bmm(
-            affinity, high_features.transpose(2, 1)).transpose(2, 1)
+            affinity, high_features.transpose(0, 2, 1)).transpose(0, 2, 1)
         fusion_feature = (high_features + low_features)
         (mp_b, mp_c, mp_h, mp_w) = low_indices.shape
         low_indices = low_indices.view((mp_b, mp_c, (- 1)))

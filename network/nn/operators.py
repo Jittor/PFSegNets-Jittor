@@ -20,7 +20,7 @@ class PSPModule(nn.Module):
 
     def execute(self, feats):
         (h, w) = (feats.shape[2], feats.shape[3])
-        priors = ([nn.upsample(input=stage(feats), size=(
+        priors = ([nn.interpolate(stage(feats), size=(
             h, w), mode='bilinear', align_corners=True) for stage in self.stages] + [feats])
         bottle = self.bottleneck(jt.contrib.concat(priors, dim=1))
         return bottle

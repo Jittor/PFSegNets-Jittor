@@ -10,9 +10,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 
-import torch
-
-
 from utils.attr_dict import AttrDict
 
 
@@ -33,17 +30,13 @@ __C.REDUCE_BORDER_EPOCH = -1
 __C.STRICTBORDERCLASS = None
 
 
-#Attribute Dictionary for Dataset
+# Attribute Dictionary for Dataset
 __C.DATASET = AttrDict()
-#Cityscapes Dir Location
+# Cityscapes Dir Location
 # iSAID Dataset Dir Location
-__C.DATASET.iSAID_DIR = './data/iSAID'
-# Posdam 896x896 Dataset Dir Location
-__C.DATASET.POSDAM_DIR = './data/posdam896'
-# Vaihingen 768x768 Dataset Dir Location
-__C.DATASET.VAIHINGEN_DIR = './data/vaihingen768'
+__C.DATASET.iSAID_DIR = '/home/gmh/datasets/iSAID_patches'
 
-#Number of splits to support
+# Number of splits to support
 __C.DATASET.CV_SPLITS = 3
 
 
@@ -61,29 +54,17 @@ def assert_and_infer_cfg(args, make_immutable=True, train_mode=True):
     that's harder to understand than is necessary).
     """
 
-    if hasattr(args, 'syncbn') and args.syncbn:
-        if args.apex:
-            import apex
-            __C.MODEL.BN = 'apex-syncnorm'
-            __C.MODEL.BNFUNC = apex.parallel.SyncBatchNorm
-        else:
-            raise Exception('No Support for SyncBN without Apex')
-    else:
-        __C.MODEL.BNFUNC = torch.nn.BatchNorm2d
-        print('Using regular batch norm')
-
     if not train_mode:
         cfg.immutable(True)
         return
-    if args.class_uniform_pct:
-        cfg.CLASS_UNIFORM_PCT = args.class_uniform_pct
 
     if args.batch_weighting:
         __C.BATCH_WEIGHTING = True
 
     if args.jointwtborder:
         if args.strict_bdr_cls != '':
-            __C.STRICTBORDERCLASS = [int(i) for i in args.strict_bdr_cls.split(",")]
+            __C.STRICTBORDERCLASS = [int(i)
+                                     for i in args.strict_bdr_cls.split(",")]
         if args.rlx_off_epoch > -1:
             __C.REDUCE_BORDER_EPOCH = args.rlx_off_epoch
 

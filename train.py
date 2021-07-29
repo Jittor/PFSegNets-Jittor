@@ -2,9 +2,8 @@ from __future__ import absolute_import
 from __future__ import division
 import argparse
 import logging
-import os
 import numpy as np
-import torch
+import jittor as jt
 
 from config import cfg, assert_and_infer_cfg
 from utils.misc import AverageMeter, prep_experiment, evaluate_eval, fast_hist, set_bn_eval
@@ -14,6 +13,12 @@ import loss
 import network
 import optimizer
 
+jt.flags.use_cuda = 1
+if jt.in_mpi:
+    world_rank = jt.mpi.world_rank()
+    is_main = (world_rank == 0)
+else:
+    is_main = True
 
 # Argument Parser
 parser = argparse.ArgumentParser(description='Semantic Segmentation')
@@ -27,8 +32,6 @@ parser.add_argument('--dataset', type=str, default='cityscapes',
 parser.add_argument('--cv', type=int, default=0,
                     help='cross-validation split id to use. Default # of splits set to 3 in config')
 
-parser.add_argument('--class_uniform_pct', type=float, default=0.0,
-                    help='What fraction of images is uniformly sampled')
 parser.add_argument('--class_uniform_tile', type=int, default=1024,
                     help='tile size for class uniform sampling')
 
@@ -57,13 +60,6 @@ parser.add_argument('--rescale', type=float, default=1.0,
                     help='Warm Restarts new learning rate ratio compared to original lr')
 parser.add_argument('--repoly', type=float, default=1.5,
                     help='Warm Restart new poly exp')
-parser.add_argument('--apex', action='store_true', default=False,
-                    help='Use Nvidia Apex Distributed Data Parallel')
-parser.add_argument('--fp16', action='store_true', default=False,
-                    help='Use Nvidia Apex AMP')
-
-parser.add_argument('--local_rank', default=0, type=int,
-                    help='parameter used by apex library')
 
 parser.add_argument('--sgd', action='store_true', default=True)
 parser.add_argument('--adam', action='store_true', default=False)
@@ -113,8 +109,6 @@ parser.add_argument('--ckpt', type=str, default='logs/ckpt',
                     help='Save Checkpoint Point')
 parser.add_argument('--tb_path', type=str, default='logs/tb',
                     help='Save Tensorboard Path')
-parser.add_argument('--syncbn', action='store_true', default=False,
-                    help='Use Synchronized BN')
 parser.add_argument('--fix_bn', action='store_true', default=False,
                     help=" whether to fix bn for improving the performance")
 parser.add_argument('--evaluateF', action='store_true', default=False,
@@ -151,26 +145,10 @@ args = parser.parse_args()
 args.best_record = {'epoch': -1, 'iter': 0, 'val_loss': 1e10, 'acc': 0,
                     'acc_cls': 0, 'mean_iu': 0, 'fwavacc': 0}
 
-# Enable CUDNN Benchmarking optimization
-torch.backends.cudnn.benchmark = True
-args.world_size = 1
 
 # Test Mode run two epochs with a few iterations of training and val
 if args.test_mode:
     args.max_epoch = 2
-
-if 'WORLD_SIZE' in os.environ and args.apex:
-    args.apex = int(os.environ['WORLD_SIZE']) > 1
-    args.world_size = int(os.environ['WORLD_SIZE'])
-    print("Total world size: ", int(os.environ['WORLD_SIZE']))
-
-if args.apex:
-    # Check that we are running with cuda as distributed is only supported for cuda.
-    torch.cuda.set_device(args.local_rank)
-    print('My Rank:', args.local_rank)
-    # Initialize distributed communication
-    torch.distributed.init_process_group(backend='nccl',
-                                         init_method='env://')
 
 
 def main():
@@ -181,7 +159,7 @@ def main():
     # Set up the Arguments, Tensorboard Writer, Dataloader, Loss Fn, Optimizer
     assert_and_infer_cfg(args)
     writer = prep_experiment(args, parser)
-    train_loader, val_loader, train_obj = datasets.setup_loaders(args)
+    train_loader, val_loader = datasets.setup_loaders(args)
     criterion, criterion_val = loss.get_loss(args)
     net = network.get_net(args, criterion)
 
@@ -191,7 +169,6 @@ def main():
         net.apply(set_bn_eval)
         print("Fix bn for finetuning")
 
-    net = network.wrap_network_in_dataparallel(net, args.apex)
     if args.snapshot:
         optimizer.load_weights(net, optim,
                                args.snapshot, args.restore_optimizer)
@@ -208,18 +185,9 @@ def main():
 
         scheduler.step()
         train(train_loader, net, optim, epoch, writer)
-        if args.apex:
-            train_loader.sampler.set_epoch(epoch + 1)
         if epoch % args.eval_freq == 0 or epoch == args.max_epoch - 1:
             validate(val_loader, net, criterion_val,
                      optim, epoch, writer)
-        if args.class_uniform_pct:
-            if epoch >= args.max_cu_epoch:
-                train_obj.build_epoch(cut=True)
-                if args.apex:
-                    train_loader.sampler.set_num_samples()
-            else:
-                train_obj.build_epoch()
 
 
 def train(train_loader, net, optim, curr_epoch, writer):
@@ -240,13 +208,11 @@ def train(train_loader, net, optim, curr_epoch, writer):
     for i, data in enumerate(train_loader):
         edges = None
         if args.joint_edge_loss_pfnet:
-            inputs, gts, bodys, edges, _img_name = data
+            inputs, gts, edges, _img_name = data
         else:
             inputs, gts, _img_name = data
 
         batch_pixel_size = inputs.size(0) * inputs.size(2) * inputs.size(3)
-
-        inputs, gts = inputs.cuda(), gts.cuda()
 
         optim.zero_grad()
         if args.joint_edge_loss_pfnet:
@@ -256,34 +222,18 @@ def train(train_loader, net, optim, curr_epoch, writer):
                 main_loss = main_loss + v
         else:
             main_loss = net(inputs, gts=gts)
-
-        if args.apex:
-            log_main_loss = main_loss.clone().detach_()
-            torch.distributed.all_reduce(
-                log_main_loss, torch.distributed.ReduceOp.SUM)
-            log_main_loss = log_main_loss / args.world_size
-        else:
-            main_loss = main_loss.mean()
-            log_main_loss = main_loss.clone().detach_()
+        main_loss = main_loss.mean()
+        log_main_loss = main_loss.clone()
 
         train_main_loss.update(log_main_loss.item(), batch_pixel_size)
-        if args.fp16:
-            with amp.scale_loss(main_loss, optim) as scaled_loss:
-                scaled_loss.backward()
-        else:
-            if not torch.isfinite(main_loss).all():
-                raise FloatingPointError(
-                    "Loss became infinite or NaN at iteration={}!\nloss_dict = {}".format(
-                        curr_iter, main_loss
-                    )
-                )
-            main_loss.backward()
+
+        optim.backward(main_loss)
 
         optim.step()
 
         curr_iter += 1
 
-        if args.local_rank == 0 and i % args.print_freq == 0:
+        if i % args.print_freq == 0:
             if args.joint_edge_loss_pfnet:
                 msg = f'[epoch {curr_epoch}], [iter {i + 1} / {len(train_loader)}], '
                 msg += '[seg_main_loss:{:0.5f}]'.format(
@@ -299,6 +249,7 @@ def train(train_loader, net, optim, curr_epoch, writer):
                     optim.param_groups[-1]['lr'])
 
             logging.info(msg)
+            print(msg)
 
             # Log tensorboard metrics for each iteration of the training phase
             writer.add_scalar('training/loss', (train_main_loss.val),
@@ -333,22 +284,20 @@ def validate(val_loader, net, criterion, optim, curr_epoch, writer):
         assert inputs.size()[2:] == gt_image.size()[1:]
 
         batch_pixel_size = inputs.size(0) * inputs.size(2) * inputs.size(3)
-        inputs, gt_cuda = inputs.cuda(), gt_image.cuda()
 
-        with torch.no_grad():
+        with jt.no_grad():
             output = net(inputs)
 
         assert output.size()[2:] == gt_image.size()[1:]
         assert output.size()[1] == args.dataset_cls.num_classes
 
-        val_loss.update(criterion(output, gt_cuda).item(), batch_pixel_size)
-        predictions = output.data.max(1)[1].cpu()      # prediction map
+        val_loss.update(criterion(output, gt_image).item(), batch_pixel_size)
+        predictions = output.argmax(dim=1)[0]      # prediction map
 
         # Logging
         if val_idx % 20 == 0:
-            if args.local_rank == 0:
-                logging.info("validating: %d / %d",
-                             val_idx + 1, len(val_loader))
+            logging.info("validating: %d / %d",
+                         val_idx + 1, len(val_loader))
         if val_idx > 10 and args.test_mode:
             break
 
@@ -360,15 +309,8 @@ def validate(val_loader, net, criterion, optim, curr_epoch, writer):
                              args.dataset_cls.num_classes)
         del output, val_idx, data
 
-    if args.apex:
-        iou_acc_tensor = torch.cuda.FloatTensor(iou_acc)
-        torch.distributed.all_reduce(
-            iou_acc_tensor, op=torch.distributed.ReduceOp.SUM)
-        iou_acc = iou_acc_tensor.cpu().numpy()
-
-    if args.local_rank == 0:
-        evaluate_eval(args, net, optim, val_loss, iou_acc, dump_images,
-                      writer, curr_epoch, args.dataset_cls)
+    evaluate_eval(args, net, optim, val_loss, iou_acc, dump_images,
+                  writer, curr_epoch, args.dataset_cls)
 
     return val_loss.avg
 
@@ -393,9 +335,8 @@ def evaluate_F_score(val_loader, net, thresh, Fpc, Fc):
         input, mask, img_names = data
         assert len(input.size()) == 4 and len(mask.size()) == 3
         assert input.size()[2:] == mask.size()[1:]
-        input, mask_cuda = input.cuda(), mask.cuda()
 
-        with torch.no_grad():
+        with jt.no_grad():
             seg_out = net(input)
 
         seg_predictions = seg_out.data.max(1)[1].cpu()
@@ -408,21 +349,10 @@ def evaluate_F_score(val_loader, net, thresh, Fpc, Fc):
 
         del seg_out, vi, data
 
-    if args.apex:
-        Fc_tensor = torch.cuda.FloatTensor(Fc)
-        torch.distributed.all_reduce(
-            Fc_tensor, op=torch.distributed.ReduceOp.SUM)
-        Fc = Fc_tensor.cpu().numpy()
-        Fpc_tensor = torch.cuda.FloatTensor(Fpc)
-        torch.distributed.all_reduce(
-            Fpc_tensor, op=torch.distributed.ReduceOp.SUM)
-        Fpc = Fpc_tensor.cpu().numpy()
-
-    if args.local_rank == 0:
-        logging.info('Threshold: ' + thresh)
-        logging.info('F_Score: ' + str(np.sum(Fpc / Fc) /
-                     args.dataset_cls.num_classes))
-        logging.info('F_Score (Classwise): ' + str(Fpc / Fc))
+    logging.info('Threshold: ' + thresh)
+    logging.info('F_Score: ' + str(np.sum(Fpc / Fc) /
+                                   args.dataset_cls.num_classes))
+    logging.info('F_Score (Classwise): ' + str(Fpc / Fc))
 
     return Fpc
 

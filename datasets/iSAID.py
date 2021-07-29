@@ -39,7 +39,7 @@ def make_dataset(quality, mode, hardnm=0):
     assert mode in ['train', 'val', 'test', 'val_ori', 'val1000']
 
     image_path = osp.join(root, mode, 'images')
-    mask_path = osp.join(root, mode, 'masks')
+    mask_path = osp.join(root, mode, 'masks_new')
 
     c_tokens = os.listdir(image_path)
     c_tokens.sort()
@@ -64,6 +64,7 @@ class ISAIDDataset(Dataset):
                  transform=None, target_transform=None, dump_images=False,
                  class_uniform_pct=None, class_uniform_title=0, test=False,
                  cv_split=None, scf=None, hardnm=0, edge_map=False, thicky=8):
+
         super(ISAIDDataset, self).__init__(batch_size=batch_size,
                                            shuffle=shuffle, num_workers=num_workers)
 
@@ -89,7 +90,6 @@ class ISAIDDataset(Dataset):
         assert len(self.data_tokens), 'Found 0 images please check the dataset'
 
     def __getitem__(self, index):
-
         token = self.data_tokens[index]
         image_path, mask_path = token
 
@@ -119,8 +119,7 @@ class ISAIDDataset(Dataset):
 
         if self.edge_map:
             boundary = self.get_boundary(mask, thicky=self.thicky)
-            body = self.get_body(mask, boundary)
-            return image, mask, body, boundary, image_name
+            return image, mask, boundary, image_name
 
         return image, mask, image_name
 
@@ -132,17 +131,10 @@ class ISAIDDataset(Dataset):
 
     @staticmethod
     def get_boundary(mask, thicky=8):
-        tmp = mask.data.numpy().astype('uint8')
+        tmp = mask.numpy().astype('uint8')
         contour, _ = cv2.findContours(
             tmp, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         boundary = np.zeros_like(tmp)
         boundary = cv2.drawContours(boundary, contour, -1, 1, thicky)
-        boundary = boundary.astype(np.float)
+        boundary = boundary.astype(np.float32)
         return boundary
-
-    @staticmethod
-    def get_body(mask, edge):
-        edge_valid = edge == 1
-        body = mask.clone()
-        body[edge_valid] = ignore_label
-        return body

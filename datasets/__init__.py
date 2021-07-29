@@ -68,12 +68,12 @@ def setup_loaders(args):
         pass
 
     train_input_transform += [transforms.ToTensor(),
-                              transforms.Normalize(*mean_std)]
+                              transforms.ImageNormalize(*mean_std)]
     train_input_transform = transforms.Compose(train_input_transform)
 
     val_input_transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(*mean_std)
+        transforms.ImageNormalize(*mean_std)
     ])
 
     target_transform = extended_transforms.MaskToTensor()
@@ -95,7 +95,6 @@ def setup_loaders(args):
             transform=train_input_transform,
             target_transform=target_train_transform,
             dump_images=args.dump_augmentation_images,
-            class_uniform_pct=args.class_uniform_pct,
             class_uniform_title=args.class_uniform_tile,
             test=args.test_mode,
             cv_split=args.cv,
@@ -113,4 +112,4 @@ def setup_loaders(args):
             cv_split=args.cv,
             scf=None)
 
-    return train_set, val_set, train_set
+    return train_set, val_set

@@ -6,23 +6,22 @@ import sys
 import os
 import shutil
 import time
-import torch
 from datetime import datetime
 import logging
 from tensorboardX import SummaryWriter
 import numpy as np
-import torchvision.transforms as standard_transforms
-import torchvision.utils as vutils
+import jittor.transform as transforms
+import jittor as jt
 
-# Create unique output dir name based on non-default command line args
+
 def make_exp_name(args, parser):
     exp_name = '{}-{}'.format(args.dataset[:4], args.arch[:])
     dict_args = vars(args)
 
     # sort so that we get a consistent directory name
     argnames = sorted(dict_args)
-    ignorelist = ['exp', 'arch','prev_best_filepath', 'lr_schedule', 'max_cu_epoch', 'max_epoch',
-                  'strict_bdr_cls', 'world_size', 'tb_path','best_record', 'test_mode', 'ckpt', 'syncbn']
+    ignorelist = ['exp', 'arch', 'prev_best_filepath', 'lr_schedule', 'max_cu_epoch', 'max_epoch',
+                  'strict_bdr_cls', 'world_size', 'tb_path', 'best_record', 'test_mode', 'ckpt', 'syncbn']
     # build experiment name with non-default args
     for argname in argnames:
         if dict_args[argname] != parser.get_default(argname):
@@ -33,7 +32,7 @@ def make_exp_name(args, parser):
                 argname = ''
             elif argname == 'nosave':
                 arg_str = ''
-                argname=''
+                argname = ''
             elif argname == 'freeze_trunk':
                 argname = ''
                 arg_str = 'ft'
@@ -72,6 +71,7 @@ def make_exp_name(args, parser):
     # clean special chars out    exp_name = re.sub(r'[^A-Za-z0-9_\-]+', '', exp_name)
     return exp_name
 
+
 def fast_hist(label_pred, label_true, num_classes):
     mask = (label_true >= 0) & (label_true < num_classes)
     hist = np.bincount(
@@ -79,13 +79,16 @@ def fast_hist(label_pred, label_true, num_classes):
         label_pred[mask], minlength=num_classes ** 2).reshape(num_classes, num_classes)
     return hist
 
+
 def per_class_iu(hist):
     return np.diag(hist) / (hist.sum(1) + hist.sum(0) - np.diag(hist))
+
 
 def save_log(prefix, output_dir, date_str, rank=0):
     fmt = '%(asctime)s.%(msecs)03d %(message)s'
     date_fmt = '%m-%d %H:%M:%S'
-    filename = os.path.join(output_dir, prefix + '_' + date_str +'_rank_' + str(rank) +'.log')
+    filename = os.path.join(output_dir, prefix + '_' +
+                            date_str + '_rank_' + str(rank) + '.log')
     print("Logging :", filename)
     logging.basicConfig(level=logging.INFO, format=fmt, datefmt=date_fmt,
                         filename=filename, filemode='w')
@@ -99,6 +102,7 @@ def save_log(prefix, output_dir, date_str, rank=0):
         fh = logging.FileHandler(filename)
         logging.getLogger('').addHandler(fh)
 
+
 def prep_experiment(args, parser):
     """
     Make output directories, setup logging, Tensorboard, snapshot code.
@@ -108,20 +112,20 @@ def prep_experiment(args, parser):
     exp_name = make_exp_name(args, parser)
     args.exp_path = os.path.join(ckpt_path, args.exp, exp_name)
     args.tb_exp_path = os.path.join(tb_path, args.exp, exp_name)
-    args.ngpu = torch.cuda.device_count()
+    args.ngpu = jt.get_device_count()
     args.date_str = str(datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
     args.best_record = {'epoch': -1, 'iter': 0, 'val_loss': 1e10, 'acc': 0,
                         'acc_cls': 0, 'mean_iu': 0, 'fwavacc': 0}
     args.last_record = {}
-    if args.local_rank == 0:
-        os.makedirs(args.exp_path, exist_ok=True)
-        os.makedirs(args.tb_exp_path, exist_ok=True)
-        save_log('log', args.exp_path, args.date_str, rank=args.local_rank)
-        open(os.path.join(args.exp_path, args.date_str + '.txt'), 'w').write(
-            str(args) + '\n\n')
-        writer = SummaryWriter(log_dir=args.tb_exp_path, comment=args.tb_tag)
-        return writer
-    return None
+
+    os.makedirs(args.exp_path, exist_ok=True)
+    os.makedirs(args.tb_exp_path, exist_ok=True)
+    save_log('log', args.exp_path, args.date_str, rank=1)
+    open(os.path.join(args.exp_path, args.date_str + '.txt'), 'w').write(
+        str(args) + '\n\n')
+    writer = SummaryWriter(log_dir=args.tb_exp_path, comment=args.tb_tag)
+    return writer
+
 
 def evaluate_eval_for_inference(hist, dataset=None, with_f1=False, beta=1):
     """
@@ -183,10 +187,8 @@ def evaluate_eval(args, net, optimizer, val_loss, hist, dump_images, writer, epo
     last_snapshot = os.path.join(args.exp_path, last_snapshot)
     args.last_record['mean_iu'] = mean_iu
     args.last_record['epoch'] = epoch
-    
-    torch.cuda.synchronize()
-    
-    torch.save({
+
+    jt.save({
         'state_dict': net.state_dict(),
         'optimizer': optimizer.state_dict(),
         'epoch': epoch,
@@ -205,7 +207,6 @@ def evaluate_eval(args, net, optimizer, val_loss, hist, dump_images, writer, epo
                 'cant find old snapshot {}'.format(best_snapshot)
             os.remove(best_snapshot)
 
-        
         # save new best
         args.best_record['val_loss'] = val_loss.avg
         args.best_record['epoch'] = epoch
@@ -218,8 +219,7 @@ def evaluate_eval(args, net, optimizer, val_loss, hist, dump_images, writer, epo
             args.best_record['epoch'], args.best_record['mean_iu'])
         best_snapshot = os.path.join(args.exp_path, best_snapshot)
         shutil.copyfile(last_snapshot, best_snapshot)
-        
-    
+
         to_save_dir = os.path.join(args.exp_path, 'best_images')
         os.makedirs(to_save_dir, exist_ok=True)
         if args.draw_train:
@@ -227,32 +227,36 @@ def evaluate_eval(args, net, optimizer, val_loss, hist, dump_images, writer, epo
 
             idx = 0
 
-            visualize = standard_transforms.Compose([
-                standard_transforms.Scale(384),
-                standard_transforms.ToTensor()
+            visualize = transforms.Compose([
+                transforms.Scale(384),
+                transforms.ToTensor()
             ])
             for bs_idx, bs_data in enumerate(dump_images):
-                for local_idx, data in enumerate(zip(bs_data[0], bs_data[1],bs_data[2])):
-                    gt_pil = args.dataset_cls.colorize_mask(data[0].cpu().numpy())
-                    predictions_pil = args.dataset_cls.colorize_mask(data[1].cpu().numpy())
+                for local_idx, data in enumerate(zip(bs_data[0], bs_data[1], bs_data[2])):
+                    gt_pil = args.dataset_cls.colorize_mask(
+                        data[0].numpy())
+                    predictions_pil = args.dataset_cls.colorize_mask(
+                        data[1].numpy())
                     img_name = data[2]
 
                     prediction_fn = '{}_prediction.png'.format(img_name)
-                    predictions_pil.save(os.path.join(to_save_dir, prediction_fn))
+                    predictions_pil.save(os.path.join(
+                        to_save_dir, prediction_fn))
                     gt_fn = '{}_gt.png'.format(img_name)
                     gt_pil.save(os.path.join(to_save_dir, gt_fn))
                     val_visual.extend([visualize(gt_pil.convert('RGB')),
                                        visualize(predictions_pil.convert('RGB'))])
                     if local_idx >= 9:
                         break
-            val_visual = torch.stack(val_visual, 0)
-            val_visual = vutils.make_grid(val_visual, nrow=10, padding=5)
-            writer.add_image('imgs', val_visual, epoch )
+            val_visual = jt.stack(val_visual, 0)
+            val_visual = jt.make_grid(val_visual, nrow=10, padding=5)
+            writer.add_image('imgs', val_visual, epoch)
 
     logging.info('-' * 107)
     fmt_str = '[epoch %d], [val loss %.5f], [acc %.5f], [acc_cls %.5f], ' +\
               '[mean_iu %.5f], [fwavacc %.5f]'
-    logging.info(fmt_str % (epoch, val_loss.avg, acc, acc_cls, mean_iu, fwavacc))
+    logging.info(fmt_str % (epoch, val_loss.avg,
+                 acc, acc_cls, mean_iu, fwavacc))
     fmt_str = 'best record: [val loss %.5f], [acc %.5f], [acc_cls %.5f], ' +\
               '[mean_iu %.5f], [fwavacc %.5f], [epoch %d], '
     logging.info(fmt_str % (args.best_record['val_loss'], args.best_record['acc'],
@@ -267,6 +271,7 @@ def evaluate_eval(args, net, optimizer, val_loss, hist, dump_images, writer, epo
     writer.add_scalar('training/mean_iu', mean_iu, epoch)
     writer.add_scalar('training/val_loss', val_loss.avg, epoch)
 
+
 def print_evaluate_results(hist, iu, dataset=None):
     # fixme: Need to refactor this dict
     try:
@@ -278,7 +283,8 @@ def print_evaluate_results(hist, iu, dataset=None):
     iu_true_positive = np.diag(hist)
 
     logging.info('IoU:')
-    logging.info('label_id      label    iU    Precision Recall TP     FP    FN')
+    logging.info(
+        'label_id      label    iU    Precision Recall TP     FP    FN')
     for idx, i in enumerate(iu):
         # Format all of the strings:
         idx_string = "{:2d}".format(idx)
@@ -296,6 +302,7 @@ def print_evaluate_results(hist, iu, dataset=None):
         logging.info('{}    {}   {}  {}     {}  {}   {}   {}'.format(
             idx_string, class_name, iu_string, precision, recall, tp, fp, fn))
 
+
 def print_evaluate_results_f1(hist, iu, beta=1, dataset=None):
     # fixme: Need to refactor this dict
     try:
@@ -308,7 +315,8 @@ def print_evaluate_results_f1(hist, iu, beta=1, dataset=None):
     f1s = []
 
     logging.info('IoU:')
-    logging.info('label_id      label    iU    Precision Recall  TP     FP    FN    F1')
+    logging.info(
+        'label_id      label    iU    Precision Recall  TP     FP    FN    F1')
     for idx, i in enumerate(iu):
         # Format all of the strings:
         idx_string = "{:2d}".format(idx)
@@ -319,8 +327,10 @@ def print_evaluate_results_f1(hist, iu, beta=1, dataset=None):
         fp = '{:5.5f}'.format(
             iu_false_positive[idx] / iu_true_positive[idx])
         fn = '{:5.5f}'.format(iu_false_negative[idx] / iu_true_positive[idx])
-        pre = iu_true_positive[idx] / (iu_true_positive[idx] + iu_false_positive[idx])
-        rec = iu_true_positive[idx] / (iu_true_positive[idx] + iu_false_negative[idx])
+        pre = iu_true_positive[idx] / \
+            (iu_true_positive[idx] + iu_false_positive[idx])
+        rec = iu_true_positive[idx] / \
+            (iu_true_positive[idx] + iu_false_negative[idx])
         f1 = (1 + beta) * pre * rec / (beta * pre + rec)
         f1s.append(f1)
         precision = '{:5.5f}'.format(pre)
@@ -330,6 +340,7 @@ def print_evaluate_results_f1(hist, iu, beta=1, dataset=None):
         logging.info('{}    {}   {}  {}     {}  {}   {}   {}  {}'.format(
             idx_string, class_name, iu_string, precision, recall, tp, fp, fn, f1))
     return f1s
+
 
 class AverageMeter(object):
 
@@ -356,7 +367,7 @@ def set_bn_eval(m):
 
 
 def speed_test(model, size=896, iteration=100):
-    input_t = torch.Tensor(1, 3, size, size).cuda()
+    input_t = jt.ones((1, 3, size, size))
 
     print("start warm up")
 
@@ -368,7 +379,6 @@ def speed_test(model, size=896, iteration=100):
     for i in range(iteration):
         model(input_t)
 
-    torch.cuda.synchronize()
     end_ts = time.time()
 
     t_cnt = end_ts - start_ts

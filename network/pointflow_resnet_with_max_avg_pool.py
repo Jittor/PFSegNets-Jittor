@@ -124,7 +124,7 @@ class AlignNetResNetMaxAvgpool(nn.Module):
 
         edge_preds = [nn.interpolate(
             edge_pred, size=x_size[2:], mode='bilinear', align_corners=True) for edge_pred in x[1]]
-        if self.training:
+        if self.is_training():
             if not self.fpn_dsn:
                 return self.criterion([main_out, edge_preds], gts)
             return self.criterion(x, gts)
