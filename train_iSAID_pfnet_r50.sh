@@ -25,7 +25,7 @@ CUDA_VISIBLE_DEVICES=0 python train.py \
   --crop_size 896 \
   --max_epoch 16 \
   --wt_bound 1.0 \
-  --bs_mult 2 \
+  --bs_mult 4 \
   --exp r50 \
   --ckpt ${EXP_DIR}/ \
   --tb_path ${EXP_DIR}/ \
