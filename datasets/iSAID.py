@@ -88,6 +88,7 @@ class ISAIDDataset(Dataset):
         self.thicky = thicky
 
         assert len(self.data_tokens), 'Found 0 images please check the dataset'
+        self.total_len=len(self.data_tokens)
 
     def __getitem__(self, index):
         token = self.data_tokens[index]
@@ -122,9 +123,6 @@ class ISAIDDataset(Dataset):
             return image, mask, boundary, image_name
 
         return image, mask, image_name
-
-    def __len__(self):
-        return len(self.data_tokens)
 
     def build_epoch(self):
         pass

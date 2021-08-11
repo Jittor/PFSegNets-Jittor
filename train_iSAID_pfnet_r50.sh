@@ -2,7 +2,7 @@
 now=$(date +"%Y%m%d_%H%M%S")
 EXP_DIR=./iSAID/
 mkdir -p ${EXP_DIR}
-CUDA_VISIBLE_DEVICES=0 python train.py \
+CUDA_VISIBLE_DEVICES=1 python train.py \
   --dataset iSAID \
   --cv 0 \
   --arch network.pointflow_resnet_with_max_avg_pool.DeepR50_PF_maxavg_deeply \

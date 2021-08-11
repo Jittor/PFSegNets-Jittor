@@ -34,3 +34,5 @@ tools/pods_train
 
 # Pycharm editor settings
 .idea
+event*
+log*

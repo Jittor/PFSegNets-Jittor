@@ -111,5 +111,7 @@ def setup_loaders(args):
             test=False,
             cv_split=args.cv,
             scf=None)
-
+    train_set.set_attrs(drop_last=True)
+    val_set.set_attrs(drop_last=True)
+    
     return train_set, val_set

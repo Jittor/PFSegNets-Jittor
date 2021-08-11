@@ -4,7 +4,7 @@ from jittor import nn
 
 class PSPModule(nn.Module):
 
-    def __init__(self, features, out_features=512, sizes=(1, 2, 3, 6), norm_layer=nn.BatchNorm):
+    def __init__(self, features, out_features=512, sizes=(1, 2, 3, 7), norm_layer=nn.BatchNorm):
         super(PSPModule, self).__init__()
         self.stages = []
         self.stages = nn.ModuleList(
@@ -20,7 +20,6 @@ class PSPModule(nn.Module):
 
     def execute(self, feats):
         (h, w) = (feats.shape[2], feats.shape[3])
-        priors = ([nn.interpolate(stage(feats), size=(
-            h, w), mode='bilinear', align_corners=True) for stage in self.stages] + [feats])
+        priors = [nn.interpolate(stage(feats), size=(h, w), mode='bilinear', align_corners=True) for stage in self.stages] + [feats]
         bottle = self.bottleneck(jt.contrib.concat(priors, dim=1))
         return bottle

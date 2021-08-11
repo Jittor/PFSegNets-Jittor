@@ -31,11 +31,8 @@ class UperNetAlignHeadMaxAvgpool(nn.Module):
         for i in range((len(fpn_inplanes) - 1)):
             self.fpn_out.append(nn.Sequential(
                 conv3x3_bn_relu(fpn_dim, fpn_dim, 1)))
-            if ignore_background:
-                self.fpn_out_align.append(PointFlowModuleWithMaxAvgpool(
-                    fpn_dim, dim=reduce_dim, maxpool_size=max_pool_size, avgpool_size=avgpool_size, edge_points=edge_points))
-            else:
-                self.fpn_out_align.append(PointFlowModuleWithMaxAvgpool(
+
+            self.fpn_out_align.append(PointFlowModuleWithMaxAvgpool(
                     fpn_dim, dim=reduce_dim, maxpool_size=max_pool_size, avgpool_size=avgpool_size, edge_points=edge_points))
             if self.fpn_dsn:
                 self.dsn.append(nn.Sequential(nn.Conv(fpn_dim, fpn_dim, 3, stride=1, padding=1), norm_layer(
@@ -48,7 +45,7 @@ class UperNetAlignHeadMaxAvgpool(nn.Module):
             (len(fpn_inplanes) * fpn_dim), fpn_dim, 1), nn.Conv(fpn_dim, num_class, 1))
 
     def execute(self, conv_out):
-        psp_out = self.ppm(conv_out[(- 1)])
+        psp_out = self.ppm(conv_out[-1])
         f = psp_out
         fpn_feature_list = [f]
         edge_preds = []

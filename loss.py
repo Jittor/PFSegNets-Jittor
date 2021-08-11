@@ -219,8 +219,7 @@ class OhemCrossEntropy2dTensor(nn.Module):
         num_valid = valid_mask.sum()
 
         prob = nn.softmax(pred, dim=1)
-        prob = (prob.transpose(0, 1)).reshape(c, -1)
-
+        prob = (prob.transpose(1, 0, 2, 3)).reshape(c, -1)
         if self.min_kept > num_valid:
             print('Labels: {}'.format(num_valid))
         elif num_valid > 0:
