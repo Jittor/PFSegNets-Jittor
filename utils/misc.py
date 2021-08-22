@@ -176,14 +176,14 @@ def evaluate_eval(args, net, optimizer, val_loss, hist, dump_images, writer, epo
 
     # update latest snapshot
     if 'mean_iu' in args.last_record:
-        last_snapshot = 'last_epoch_{}_mean-iu_{:.5f}.pth'.format(
+        last_snapshot = 'last_epoch_{}_mean-iu_{:.5f}.pkl'.format(
             args.last_record['epoch'], args.last_record['mean_iu'])
         last_snapshot = os.path.join(args.exp_path, last_snapshot)
         try:
             os.remove(last_snapshot)
         except OSError:
             pass
-    last_snapshot = 'last_epoch_{}_mean-iu_{:.5f}.pth'.format(epoch, mean_iu)
+    last_snapshot = 'last_epoch_{}_mean-iu_{:.5f}.pkl'.format(epoch, mean_iu)
     last_snapshot = os.path.join(args.exp_path, last_snapshot)
     args.last_record['mean_iu'] = mean_iu
     args.last_record['epoch'] = epoch
@@ -200,7 +200,7 @@ def evaluate_eval(args, net, optimizer, val_loss, hist, dump_images, writer, epo
     if mean_iu > args.best_record['mean_iu']:
         # remove old best snapshot
         if args.best_record['epoch'] != -1:
-            best_snapshot = 'best_epoch_{}_mean-iu_{:.5f}.pth'.format(
+            best_snapshot = 'best_epoch_{}_mean-iu_{:.5f}.pkl'.format(
                 args.best_record['epoch'], args.best_record['mean_iu'])
             best_snapshot = os.path.join(args.exp_path, best_snapshot)
             assert os.path.exists(best_snapshot), \
@@ -215,7 +215,7 @@ def evaluate_eval(args, net, optimizer, val_loss, hist, dump_images, writer, epo
         args.best_record['mean_iu'] = mean_iu
         args.best_record['fwavacc'] = fwavacc
 
-        best_snapshot = 'best_epoch_{}_mean-iu_{:.5f}.pth'.format(
+        best_snapshot = 'best_epoch_{}_mean-iu_{:.5f}.pkl'.format(
             args.best_record['epoch'], args.best_record['mean_iu'])
         best_snapshot = os.path.join(args.exp_path, best_snapshot)
         shutil.copyfile(last_snapshot, best_snapshot)

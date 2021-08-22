@@ -3,6 +3,7 @@ from __future__ import division
 import argparse
 import logging
 import numpy as np
+import torch
 import jittor as jt
 
 from config import cfg, assert_and_infer_cfg
@@ -14,12 +15,6 @@ import network
 import optimizer
 
 jt.flags.use_cuda = 1
-if jt.in_mpi:
-    world_rank = jt.mpi.world_rank()
-    is_main = (world_rank == 0)
-else:
-    is_main = True
-
 # Argument Parser
 parser = argparse.ArgumentParser(description='Semantic Segmentation')
 parser.add_argument('--lr', type=float, default=0.002)
@@ -162,7 +157,7 @@ def main():
     train_loader, val_loader = datasets.setup_loaders(args)
     criterion, criterion_val = loss.get_loss(args)
     net = network.get_net(args, criterion)
-
+    net.load_parameters(jt.load('iSAID/r50_bs16/iSAI-network.pointflow_resnet_with_max_avg_pool.DeepR50_PF_maxavg_deeply_aux_T_cs_dataset_iSAID_edge_points_128_ew_jepf_lr_0.007_maxpool_size_14_ohem_T_poly_exp_0.9/best_epoch_12_mean-iu_0.65792.pkl')['state_dict'])
     optim, scheduler = optimizer.get_optimizer(args, net)
 
     if args.fix_bn:
@@ -260,7 +255,7 @@ def train(train_loader, net, optim, curr_epoch, writer):
         if i > 5 and args.test_mode:
             return
 
-
+@jt.single_process_scope()
 def validate(val_loader, net, criterion, optim, curr_epoch, writer):
     """
     Runs the validation loop after each training epoch

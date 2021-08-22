@@ -8,18 +8,14 @@ from jittor.dataset import Dataset
 import logging
 from config import cfg
 
-num_classes = 16
+num_classes = 2
 ignore_label = 255
-root = cfg.DATASET.iSAID_DIR
+root = cfg.DATASET.GAOFENIMG
 
-label2trainid = {0: 255, 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 7, 9: 8, 10: 9,
-                 11: 10, 12: 11, 13: 12, 14: 13, 15: 14}
-id2cat = {0: 'background', 1: 'ship', 2: 'store_tank', 3: 'baseball_diamond', 4: 'tennis_court', 5: 'basketball_court',
-          6: 'Ground_Track_Field', 7: 'Bridge', 8: 'Large_Vehicle', 9: 'Small_Vehicle', 10: 'Helicopter',
-          11: 'Swimming_pool', 12: 'Roundabout', 13: 'Soccer_ball_field', 14: 'plane', 15: 'Harbor'}
+label2trainid = {0: 0, 255: 1}
+id2cat = {0: 'background', 1: 'ice'}
 
-palette = [0, 0, 0, 0, 0, 63, 0, 63, 63, 0, 63, 0, 0, 63, 127, 0, 63, 191, 0, 63, 255, 0, 127, 63, 0, 127, 127,
-           0, 0, 127, 0, 0, 191, 0, 0, 255, 0, 191, 127, 0, 127, 191, 0, 127, 255, 0, 100, 155]
+palette = [0, 0, 0, 255, 255, 255]
 
 zero_pad = 256 * 3 - len(palette)
 for i in range(zero_pad):
@@ -36,33 +32,31 @@ def make_dataset(quality, mode, hardnm=0):
     assert quality == 'semantic'
     assert mode in ['train', 'val', 'test', 'val_ori', 'val1000']
 
-    image_path = osp.join(root, mode, 'images')
-    mask_path = osp.join(root, mode, 'masks_new')
+    image_path = osp.join(root, mode, 'image')
+    mask_path = osp.join(root, mode, 'gt')
 
     c_tokens = os.listdir(image_path)
     c_tokens.sort()
-    mask_tokens = [c_token.replace('.png', '_instance_color_RGB.png') for c_token in c_tokens]
+    mask_tokens = [c_token.replace('.tif', '.png') for c_token in c_tokens]
 
     for img_token, mask_token in zip(c_tokens, mask_tokens):
         token = (osp.join(image_path, img_token), osp.join(mask_path, mask_token))
         all_tokens.append(token)
-    logging.info(f'iSAID has a total of {len(all_tokens)} images in {mode} phase')
+    logging.info(f'GAOFENIMG has a total of {len(all_tokens)} images in {mode} phase')
 
-    logging.info(f'iSAID-{mode}: {len(all_tokens)} images')
+    logging.info(f'GAOFENIMG-{mode}: {len(all_tokens)} images')
 
     return all_tokens
 
 
-class ISAIDDataset(Dataset):
+class GAOFENIMG(Dataset):
 
     def __init__(self, batch_size, shuffle, num_workers, quality, mode, maxSkip=0, joint_transform_list=None,
                  transform=None, target_transform=None, dump_images=False,
                  class_uniform_pct=None, class_uniform_title=0, test=False,
                  cv_split=None, scf=None, hardnm=0, edge_map=False, thicky=8):
-
-        super(ISAIDDataset, self).__init__(batch_size=batch_size,
+        super(GAOFENIMG, self).__init__(batch_size=batch_size,
                                            shuffle=shuffle, num_workers=num_workers)
-
         self.quality = quality
         self.mode = mode
         self.maxSkip = maxSkip
@@ -86,6 +80,7 @@ class ISAIDDataset(Dataset):
         self.total_len=len(self.data_tokens)
 
     def __getitem__(self, index):
+
         token = self.data_tokens[index]
         image_path, mask_path = token
 
@@ -112,6 +107,7 @@ class ISAIDDataset(Dataset):
         if self.target_transform is not None:
             mask = self.target_transform(mask)
 
+        mask[mask==255] = 1
         if self.edge_map:
             boundary = self.get_boundary(mask, thicky=self.thicky)
             return image, mask, boundary, image_name

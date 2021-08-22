@@ -36,3 +36,4 @@ tools/pods_train
 .idea
 event*
 log*
+debug/

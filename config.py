@@ -35,7 +35,8 @@ __C.DATASET = AttrDict()
 # Cityscapes Dir Location
 # iSAID Dataset Dir Location
 __C.DATASET.iSAID_DIR = '/home/gmh/datasets/iSAID_patches'
-
+__C.DATASET.GAOFENSAR = 'gaofen/sar'
+__C.DATASET.GAOFENIMG = 'gaofen/img'
 # Number of splits to support
 __C.DATASET.CV_SPLITS = 3
 

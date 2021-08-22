@@ -3,6 +3,8 @@ Dataset setup and loaders
 This file including the different datasets processing pipelines
 """
 from datasets import iSAID
+from datasets import GAOFENSAR
+from datasets import GAOFENIMG
 
 import jittor.transform as transforms
 import transforms.joint_transforms as joint_transforms
@@ -23,8 +25,21 @@ def setup_loaders(args):
             args.val_batch_size = args.bs_mult_val * args.ngpu
         else:
             args.val_batch_size = args.bs_mult * args.ngpu
-
-    args.num_workers = 4 * args.ngpu
+    elif args.dataset == 'GAOFENSAR':
+        args.dataset_cls = GAOFENSAR
+        args.train_batch_size = args.bs_mult * args.ngpu
+        if args.bs_mult_val > 0:
+            args.val_batch_size = args.bs_mult_val * args.ngpu
+        else:
+            args.val_batch_size = args.bs_mult * args.ngpu
+    elif args.dataset == 'GAOFENIMG':
+        args.dataset_cls = GAOFENIMG
+        args.train_batch_size = args.bs_mult * args.ngpu
+        if args.bs_mult_val > 0:
+            args.val_batch_size = args.bs_mult_val * args.ngpu
+        else:
+            args.val_batch_size = args.bs_mult * args.ngpu
+    args.num_workers = 1 * args.ngpu
     if args.test_mode:
         args.num_workers = 1
 
@@ -50,7 +65,26 @@ def setup_loaders(args):
         val_joint_transform_list = [
             joint_transforms.Resize(args.crop_size)
         ]
-
+    if args.dataset == 'GAOFENSAR':
+        train_joint_transform_list = [
+            joint_transforms.Resize(args.crop_size),
+            joint_transforms.RandomHorizontallyFlip(),
+            joint_transforms.RandomVerticalFlip(),
+            joint_transforms.RandomRotateThreeDegree()]
+        val_joint_transform_list = [
+            joint_transforms.Resize(args.crop_size)
+        ]
+        mean_std = ([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+    if args.dataset == 'GAOFENIMG':
+        train_joint_transform_list = [
+            joint_transforms.Resize(args.crop_size),
+            joint_transforms.RandomHorizontallyFlip(),
+            joint_transforms.RandomVerticalFlip(),
+            joint_transforms.RandomRotateThreeDegree()]
+        val_joint_transform_list = [
+            joint_transforms.Resize(args.crop_size)
+        ]
+        mean_std = ([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     # Image appearance transformations
     train_input_transform = []
     if args.color_aug:
@@ -103,6 +137,54 @@ def setup_loaders(args):
             edge_map=edge_map,
             thicky=args.thicky)
         val_set = args.dataset_cls.ISAIDDataset(
+            args.val_batch_size, False, args.num_workers,
+            'semantic', 'val', 0,
+            joint_transform_list=val_joint_transform_list,
+            transform=val_input_transform,
+            target_transform=target_transform,
+            test=False,
+            cv_split=args.cv,
+            scf=None)
+    elif args.dataset == 'GAOFENSAR':
+        train_set = args.dataset_cls.GAOFENSAR(
+            args.train_batch_size, True, args.num_workers,
+            'semantic', 'train', args.maxSkip,
+            joint_transform_list=train_joint_transform_list,
+            transform=train_input_transform,
+            target_transform=target_train_transform,
+            dump_images=args.dump_augmentation_images,
+            class_uniform_title=args.class_uniform_tile,
+            test=args.test_mode,
+            cv_split=args.cv,
+            scf=args.scf,
+            hardnm=args.hardnm,
+            edge_map=edge_map,
+            thicky=args.thicky)
+        val_set = args.dataset_cls.GAOFENSAR(
+            args.val_batch_size, False, args.num_workers,
+            'semantic', 'val', 0,
+            joint_transform_list=val_joint_transform_list,
+            transform=val_input_transform,
+            target_transform=target_transform,
+            test=False,
+            cv_split=args.cv,
+            scf=None)
+    elif  args.dataset == 'GAOFENIMG':
+        train_set = args.dataset_cls.GAOFENIMG(
+            args.train_batch_size, True, args.num_workers,
+            'semantic', 'train', args.maxSkip,
+            joint_transform_list=train_joint_transform_list,
+            transform=train_input_transform,
+            target_transform=target_train_transform,
+            dump_images=args.dump_augmentation_images,
+            class_uniform_title=args.class_uniform_tile,
+            test=args.test_mode,
+            cv_split=args.cv,
+            scf=args.scf,
+            hardnm=args.hardnm,
+            edge_map=edge_map,
+            thicky=args.thicky)
+        val_set = args.dataset_cls.GAOFENIMG(
             args.val_batch_size, False, args.num_workers,
             'semantic', 'val', 0,
             joint_transform_list=val_joint_transform_list,
