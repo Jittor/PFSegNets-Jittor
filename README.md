@@ -99,10 +99,11 @@ sh train_iSAID_pfnet_r50.sh
           └── image
   ```
 
-- Modify the data path in the config file to the correct path (if you only train SAR, you can modify only SAR)
+- Modify the data path in the config.py to the correct path (if you only train SAR, you can modify only SAR)
+  ```shell
   __C.DATASET.GAOFENSAR ='gaofen/sar'
   __C.DATASET.GAOFENIMG ='gaofen/img'
-
+  ```
 - Training:
 
   To participate in which competition, use the corresponding script to train.
