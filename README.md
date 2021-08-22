@@ -71,6 +71,57 @@ For example, when training PFNet on iSAID dataset:
 sh train_iSAID_pfnet_r50.sh
 ```
 
+# GAOFEN Contest
+- Dataset preparation
+
+  The img folder is the data segmented by visible light sea ice, and sar is the data segmented by the sar fishing ground. All is all data, train and val are training set and validation set divided according to a certain ratio (you can divide it by yourself). Image is the corresponding picture, the suffix is tif (visible light segmentation) or png (sar segmentation), gt is the corresponding annotation file suffix is png
+  ```shell
+  gaofen
+  ├── img
+  │   ├── all
+  │   │   ├── gt
+  │   │   └── image
+  │   ├── train
+  │   │   ├── gt
+  │   │   └── image
+  │   └── val
+  │       ├── gt
+  │       └── image
+  └── sar
+      ├── all
+      │   ├── gt
+      │   └── image
+      ├── train
+      │   ├── gt
+      │   └── image
+      └── val
+          ├── gt
+          └── image
+  ```
+
+- Modify the data path in the config file to the correct path (if you only train SAR, you can modify only SAR)
+  __C.DATASET.GAOFENSAR ='gaofen/sar'
+  __C.DATASET.GAOFENIMG ='gaofen/img'
+
+- Training:
+
+  To participate in which competition, use the corresponding script to train.
+  ```shell
+  sh train_gfimg_pfnet_r50.sh
+  sh train_gfsar_pfnet_r50.sh
+  ```
+
+  In the sea ice target monitoring competition in the visible light image of Ocean-facing One, on the verification set divided by itself, it reached about miou 0.88.
+
+  In the high-resolution SAR image of the offshore fish farm segmentation data set, on the self-divided verification set, it reached about miou 0.96.
+
+- Test
+
+  Fill the model path in run.py with the correct path,
+  It is a model test according to the requirements of the competition
+  
+  Example of native test
+  python run.py gaofen/img/val/image test_img/
 # Citation
 If you find this repo is helpful to your research. Please consider cite our work.
 
