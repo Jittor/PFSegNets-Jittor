@@ -7,8 +7,8 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 mpirun -np 4 python train.py \
   --cv 0 \
   --arch network.pointflow_resnet_with_max_avg_pool.DeepR50_PF_maxavg_deeply \
   --class_uniform_tile 1024 \
-  --max_cu_epoch 10 \
-  --lr 0.0007 \
+  --max_cu_epoch 20 \
+  --lr 0.007 \
   --lr_schedule poly \
   --poly_exp 0.9 \
   --repoly 1.5  \
@@ -23,10 +23,10 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 mpirun -np 4 python train.py \
   --edge_weight 25.0 \
   --ohem \
   --crop_size 896 \
-  --max_epoch 10 \
+  --max_epoch 20 \
   --wt_bound 1.0 \
   --bs_mult 4 \
-  --exp r50_bs16 \
+  --exp r50 \
   --ckpt ${EXP_DIR}/ \
   --tb_path ${EXP_DIR}/ \
   2>&1 | tee  ${EXP_DIR}/log_${now}.txt

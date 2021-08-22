@@ -6,12 +6,10 @@ import argparse
 from datetime import datetime
 import cv2
 from PIL import Image
-
-from torch.backends import cudnn
 import torch
-import torchvision.transforms as transforms
-
-import torch.nn.functional as F
+import jittor as jt
+import jittor.transform as transforms
+from jittor import nn
 import numpy as np
 
 from config import assert_and_infer_cfg
@@ -83,13 +81,12 @@ args.edge_points = 128
 args.match_dim = 64
 args.no_flip = True
 args.dataset_cls = GAOFENIMG
-args.snapshot = 'GAOFENIMG/r50_ew_10/GAOF-network.pointflow_resnet_with_max_avg_pool.DeepR50_PF_maxavg_deeply_aux_T_bs_mult_8_cup_cs_dataset_GAOFENI_edge_points_128_ew_jepf_lr_0.007_match_dim_128_maxpool_size_14_ohem_T_poly_exp_0.9/last_epoch_63_mean-iu_0.88704.pth'
+args.snapshot = 'GAOFENSAR/r50_ew_10/GAOF-network.pointflow_resnet_with_max_avg_pool.DeepR50_PF_maxavg_deeply_aux_T_bs_mult_8_cs_dataset_GAOFENS_edge_points_128_ew_jepf_lr_0.007_maxpool_size_14_ohem_T_poly_exp_0.9/best.pkl'
 
 assert_and_infer_cfg(args, train_mode=False)
 args.apex = False  # No support for apex eval
-cudnn.benchmark = False
-mean_std = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-# mean_std = ([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+# mean_std = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+mean_std = ([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
 date_str = str(datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
 
 def inference_whole(model, img, scales):
@@ -113,13 +110,13 @@ def inference_whole(model, img, scales):
                 scaled_img = scaled_img.transpose(Image.FLIP_LEFT_RIGHT)
 
             img_transform = transforms.Compose(
-                [transforms.ToTensor(), transforms.Normalize(*mean_std)])
+                [transforms.ToTensor(), transforms.ImageNormalize(*mean_std)])
             image = img_transform(scaled_img)
-            with torch.no_grad():
-                input = image.unsqueeze(0).cuda()
+            with jt.no_grad():
+                input = jt.Var(image).unsqueeze(0)
                 scale_out = model(input)
-                scale_out = F.upsample(scale_out, size=(origh, origw), mode="bilinear", align_corners=True)
-                scale_out = scale_out.squeeze().cpu().numpy()
+                scale_out = nn.upsample(scale_out, size=(origh, origw), mode="bilinear", align_corners=True)
+                scale_out = scale_out.squeeze(0).numpy()
                 if flip:
                     scale_out = scale_out[:, :, ::-1]
             preds.append(scale_out)
@@ -134,7 +131,6 @@ def get_net():
     logging.info('Load model file: %s', args.snapshot)
     print(args)
     net = network.get_net(args, criterion=None)
-    net = torch.nn.DataParallel(net).cuda()
     net, _ = restore_snapshot(net, optimizer=None,
                               snapshot=args.snapshot, restore_optimizer_bool=False)
     net.eval()
@@ -158,7 +154,6 @@ class RunEval():
 
         prediction_pre_argmax = np.mean(prediction_pre_argmax_collection, axis=0)
         prediction = np.argmax(prediction_pre_argmax, axis=0)
-
         if self.write_image:
             cv2.imwrite(pred_img_name, prediction*255)
 
@@ -178,13 +173,8 @@ def main():
                      write_image=args.dump_images)
     net = get_net()
 
-    # Fix the ASPP pool size to 105, which is the tensor size if you train with crop
-    # size of 840x840
-    if args.fixed_aspp_pool:
-        net.module.aspp.img_pooling = torch.nn.AvgPool2d(105)
-
     image_names = os.listdir(args.input_path)
-    output_names = [i.replace('.tif', '') for i in image_names]
+    output_names = [i.replace('.tif', '').replace('.png', '') for i in image_names]
     images = [os.path.join(args.input_path,i) for i in image_names]
     
     # Run Inference!

@@ -78,7 +78,7 @@ def forgiving_state_restore(net, loaded_dict):
     net_state_dict = net.state_dict()
     new_loaded_dict = {}
     for k in net_state_dict:
-        if k in loaded_dict and net_state_dict[k].size() == loaded_dict[k].size():
+        if k in loaded_dict and net_state_dict[k].size == loaded_dict[k].size:
             new_loaded_dict[k] = loaded_dict[k]
             logging.info("Loading key: %s ", k)
         else:
