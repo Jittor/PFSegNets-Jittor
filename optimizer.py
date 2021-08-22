@@ -2,7 +2,6 @@
 Pytorch Optimizer and Scheduler Related Task
 """
 import math
-import logging
 import jittor as jt
 from jittor import optim
 from config import cfg
@@ -54,7 +53,7 @@ def get_optimizer(args, net):
 
 
 def load_weights(net, optimizer, snapshot_file, restore_optimizer_bool=False):
-    logging.info("Loading weights from model %s", snapshot_file)
+    print("Loading weights from model %s", snapshot_file)
     net, optimizer = restore_snapshot(
         net, optimizer, snapshot_file, restore_optimizer_bool)
     return net, optimizer
@@ -62,7 +61,7 @@ def load_weights(net, optimizer, snapshot_file, restore_optimizer_bool=False):
 
 def restore_snapshot(net, optimizer, snapshot, restore_optimizer_bool):
     checkpoint = jt.load(snapshot)
-    logging.info("Checkpoint Load Compelete")
+    print("Checkpoint Load Compelete")
     if optimizer is not None and 'optimizer' in checkpoint and restore_optimizer_bool:
         optimizer.load_state_dict(checkpoint['optimizer'])
 
@@ -78,11 +77,11 @@ def forgiving_state_restore(net, loaded_dict):
     net_state_dict = net.state_dict()
     new_loaded_dict = {}
     for k in net_state_dict:
-        if k in loaded_dict and net_state_dict[k].size == loaded_dict[k].size:
+        if k in loaded_dict and net_state_dict[k].shape == loaded_dict[k].shape:
             new_loaded_dict[k] = loaded_dict[k]
-            logging.info("Loading key: %s ", k)
+            print("Loading key: ", k)
         else:
-            logging.info("Skipped loading parameter %s", k)
+            print("Skipped loading parameter", k)
     net_state_dict.update(new_loaded_dict)
     net.load_state_dict(net_state_dict)
     return net

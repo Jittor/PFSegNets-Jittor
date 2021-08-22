@@ -1,6 +1,5 @@
-# python run.py /home/gmh/project/yizhang/PFSegNets/gaofen/img/val/image test_img/
+# python run.py gaofen/img/val/image test_img/
 import os
-import logging
 import sys
 import argparse
 from datetime import datetime
@@ -81,10 +80,9 @@ args.edge_points = 128
 args.match_dim = 64
 args.no_flip = True
 args.dataset_cls = GAOFENIMG
-args.snapshot = 'GAOFENSAR/r50_ew_10/GAOF-network.pointflow_resnet_with_max_avg_pool.DeepR50_PF_maxavg_deeply_aux_T_bs_mult_8_cs_dataset_GAOFENS_edge_points_128_ew_jepf_lr_0.007_maxpool_size_14_ohem_T_poly_exp_0.9/best.pkl'
+args.snapshot = 'GAOFENSAR/r50_ew_10/GAOF-network.pointflow_resnet_with_max_avg_pool.DeepR50_PF_maxavg_deeply_aux_T_bs_mult_8_cs_dataset_GAOFENS_edge_points_128_ew_jepf_lr_0.007_maxpool_size_14_ohem_T_poly_exp_0.9/best_epoch_63_mean-iu_0.95752.pkl'
 
 assert_and_infer_cfg(args, train_mode=False)
-args.apex = False  # No support for apex eval
 # mean_std = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 mean_std = ([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
 date_str = str(datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
@@ -128,7 +126,7 @@ def get_net():
     """
     Get Network for evaluation
     """
-    logging.info('Load model file: %s', args.snapshot)
+    print('Load model file: %s', args.snapshot)
     print(args)
     net = network.get_net(args, criterion=None)
     net, _ = restore_snapshot(net, optimizer=None,
@@ -165,9 +163,9 @@ def main():
 
     output_dir = args.output_path
     os.makedirs(output_dir, exist_ok=True)
-    logging.info("Network Arch: %s", args.arch)
-    logging.info("CV split: %d", args.cv_split)
-    logging.info("Scales : %s", ' '.join(str(e) for e in scales))
+    print("Network Arch: %s", args.arch)
+    print("CV split: %d", args.cv_split)
+    print("Scales : %s", ' '.join(str(e) for e in scales))
 
     runner = RunEval(output_dir,
                      write_image=args.dump_images)

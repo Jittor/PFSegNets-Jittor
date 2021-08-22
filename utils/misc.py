@@ -223,14 +223,6 @@ def evaluate_eval(args, net, optimizer, val_loss, hist, dump_images, writer, epo
         to_save_dir = os.path.join(args.exp_path, 'best_images')
         os.makedirs(to_save_dir, exist_ok=True)
         if args.draw_train:
-            val_visual = []
-
-            idx = 0
-
-            visualize = transforms.Compose([
-                transforms.Scale(384),
-                transforms.ToTensor()
-            ])
             for bs_idx, bs_data in enumerate(dump_images):
                 for local_idx, data in enumerate(zip(bs_data[0], bs_data[1], bs_data[2])):
                     gt_pil = args.dataset_cls.colorize_mask(
@@ -244,13 +236,8 @@ def evaluate_eval(args, net, optimizer, val_loss, hist, dump_images, writer, epo
                         to_save_dir, prediction_fn))
                     gt_fn = '{}_gt.png'.format(img_name)
                     gt_pil.save(os.path.join(to_save_dir, gt_fn))
-                    val_visual.extend([visualize(gt_pil.convert('RGB')),
-                                       visualize(predictions_pil.convert('RGB'))])
                     if local_idx >= 9:
                         break
-            val_visual = jt.stack(val_visual, 0)
-            val_visual = jt.make_grid(val_visual, nrow=10, padding=5)
-            writer.add_image('imgs', val_visual, epoch)
 
     logging.info('-' * 107)
     fmt_str = '[epoch %d], [val loss %.5f], [acc %.5f], [acc_cls %.5f], ' +\

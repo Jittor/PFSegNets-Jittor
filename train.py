@@ -157,7 +157,6 @@ def main():
     train_loader, val_loader = datasets.setup_loaders(args)
     criterion, criterion_val = loss.get_loss(args)
     net = network.get_net(args, criterion)
-    net.load_parameters(jt.load('iSAID/r50_bs16/iSAI-network.pointflow_resnet_with_max_avg_pool.DeepR50_PF_maxavg_deeply_aux_T_cs_dataset_iSAID_edge_points_128_ew_jepf_lr_0.007_maxpool_size_14_ohem_T_poly_exp_0.9/best_epoch_12_mean-iu_0.65792.pkl')['state_dict'])
     optim, scheduler = optimizer.get_optimizer(args, net)
 
     if args.fix_bn:
