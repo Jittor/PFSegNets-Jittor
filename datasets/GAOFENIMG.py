@@ -30,7 +30,7 @@ def make_dataset(quality, mode, hardnm=0):
     all_tokens = []
 
     assert quality == 'semantic'
-    assert mode in ['train', 'val', 'test', 'val_ori', 'val1000']
+    assert mode in ['train', 'val', 'test', 'val_ori', 'val1000', 'all']
 
     image_path = osp.join(root, mode, 'image')
     mask_path = osp.join(root, mode, 'gt')

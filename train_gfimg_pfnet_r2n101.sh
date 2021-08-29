@@ -7,7 +7,7 @@ CUDA_VISIBLE_DEVICES=1 python train.py \
   --cv 0 \
   --arch network.pointflow_resnet_with_max_avg_pool.DeepR2N101_PF_maxavg_deeply \
   --class_uniform_tile 1024 \
-  --max_cu_epoch 128 \
+  --max_cu_epoch 64 \
   --lr 0.001 \
   --lr_schedule poly \
   --poly_exp 0.9 \

@@ -148,7 +148,7 @@ def setup_loaders(args):
     elif args.dataset == 'GAOFENSAR':
         train_set = args.dataset_cls.GAOFENSAR(
             args.train_batch_size, True, args.num_workers,
-            'semantic', 'train', args.maxSkip,
+            'semantic', 'all', args.maxSkip,
             joint_transform_list=train_joint_transform_list,
             transform=train_input_transform,
             target_transform=target_train_transform,
@@ -172,7 +172,7 @@ def setup_loaders(args):
     elif  args.dataset == 'GAOFENIMG':
         train_set = args.dataset_cls.GAOFENIMG(
             args.train_batch_size, True, args.num_workers,
-            'semantic', 'train', args.maxSkip,
+            'semantic', 'all', args.maxSkip,
             joint_transform_list=train_joint_transform_list,
             transform=train_input_transform,
             target_transform=target_train_transform,
