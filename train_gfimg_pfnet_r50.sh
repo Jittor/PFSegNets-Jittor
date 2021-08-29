@@ -2,7 +2,7 @@
 now=$(date +"%Y%m%d_%H%M%S")
 EXP_DIR=./GAOFENIMG/
 mkdir -p ${EXP_DIR}
-CUDA_VISIBLE_DEVICES=0 python  train.py \
+CUDA_VISIBLE_DEVICES=1 python  train.py \
   --dataset GAOFENIMG \
   --cv 0 \
   --arch network.pointflow_resnet_with_max_avg_pool.DeepR50_PF_maxavg_deeply \
@@ -18,9 +18,9 @@ CUDA_VISIBLE_DEVICES=0 python  train.py \
   --maxpool_size 14 \
   --avgpool_size 9 \
   --edge_points 128 \
-  --match_dim 128 \
+  --match_dim 64 \
   --joint_edge_loss_pfnet \
-  --edge_weight 10.0 \
+  --edge_weight 25.0 \
   --ohem \
   --crop_size 512 \
   --max_epoch 64 \

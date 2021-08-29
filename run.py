@@ -5,7 +5,6 @@ import argparse
 from datetime import datetime
 import cv2
 from PIL import Image
-import torch
 import jittor as jt
 import jittor.transform as transforms
 from jittor import nn
@@ -78,12 +77,11 @@ args.maxpool_size = 14
 args.avgpool_size = 9
 args.edge_points = 128
 args.match_dim = 64
-args.no_flip = True
+args.no_flip = False
 args.dataset_cls = GAOFENIMG
-args.snapshot = 'GAOFENSAR/r50_ew_10/GAOF-network.pointflow_resnet_with_max_avg_pool.DeepR50_PF_maxavg_deeply_aux_T_bs_mult_8_cs_dataset_GAOFENS_edge_points_128_ew_jepf_lr_0.007_maxpool_size_14_ohem_T_poly_exp_0.9/best_epoch_63_mean-iu_0.95752.pkl'
+args.snapshot = 'best_epoch_62_mean-iu_0.95843.pkl'
 
 assert_and_infer_cfg(args, train_mode=False)
-# mean_std = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 mean_std = ([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
 date_str = str(datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
 
@@ -91,7 +89,6 @@ def inference_whole(model, img, scales):
     """
         whole images inference
     """
-    w, h = img.size
     origw, origh = img.size
     preds = []
     if args.no_flip:
@@ -100,7 +97,7 @@ def inference_whole(model, img, scales):
         flip_range = 2
 
     for scale in scales:
-        target_w, target_h = int(w * scale), int(h * scale)
+        target_w, target_h = int(512 * scale), int(512 * scale)
         scaled_img = img.resize((target_w, target_h), Image.BILINEAR)
 
         for flip in range(flip_range):
