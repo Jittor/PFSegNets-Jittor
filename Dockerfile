@@ -16,16 +16,9 @@ RUN python -m pip install jittor -i https://pypi.tuna.tsinghua.edu.cn/simple
 RUN python -m jittor.test.test_cudnn_op
 RUN export DISABLE_MULTIPROCESSING=1
 
-
 COPY . /workspace
-# 确定容器启动时程序运行路径
 WORKDIR /workspace
 RUN rm /usr/bin/python3 && ln -s /usr/bin/python3.7 /usr/bin/python3
-# 确定容器启动命令。以 python 示例，python 表示编译器，run.py 表示执 行文件，/input_path 和/output_path 为容器内绝对路径，测评时会自动将 测试数据挂载到容器内/input_path 路径，无需修改
+RUN python -c "from jittor.models.res2net import res2net101_26w_4s;resnet = res2net101_26w_4s(pretrained=True)"
+
 CMD ["python", "run.py", "/input_path", "/output_path"]
-# sudo docker build -t segform_sar .
-# sudo docker run --rm -it --gpus all -v /home/gmh/project/yizhang/PFSegNets/gaofen/sar/val/image:/input_path -v test_img:/output_path segform_sar
-# sudo docker login --username=2570219563@qq.com registry.cn-beijing.aliyuncs.com
-# Aly970819.
-# sudo docker tag segform_sar registry.cn-beijing.aliyuncs.com/glotwo/sar:segform
-# sudo docker push registry.cn-beijing.aliyuncs.com/glotwo/sar:segform

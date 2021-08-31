@@ -9,12 +9,10 @@ import jittor as jt
 import jittor.transform as transforms
 from jittor import nn
 import numpy as np
-
 from config import assert_and_infer_cfg
 from optimizer import restore_snapshot
-
 import network
-from datasets import GAOFENIMG, GAOFENSAR
+from datasets import GAOFENIMG
 
 jt.flags.use_cuda = 1
 
@@ -22,6 +20,7 @@ input_path = sys.argv[1]
 output_path = sys.argv[2]
 del sys.argv[1]
 del sys.argv[1]
+
 print(input_path, output_path)
 
 parser = argparse.ArgumentParser(description='test')
@@ -73,15 +72,16 @@ args = parser.parse_args()
 args.input_path = input_path
 args.output_path = output_path
 args.dump_images = True
-# args.arch = 'network.pointflow_resnet_with_max_avg_pool.DeepR50_PF_maxavg_deeply'
 args.arch = 'network.pointflow_resnet_with_max_avg_pool.DeepR2N101_PF_maxavg_deeply'
 args.single_scale = True
 args.scales = 1.0
 args.cv_split = 0
+
 args.maxpool_size = 14
 args.avgpool_size = 9
 args.edge_points = 128
-args.match_dim = 128
+args.match_dim = 64
+
 args.no_flip = False
 args.dataset_cls = GAOFENIMG
 args.snapshot = 'last_epoch_63_mean-iu_0.95869.pkl'
