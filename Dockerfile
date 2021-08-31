@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.0-cudnn7-runtime-ubuntu18.04
+FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04
 RUN apt-get update && apt-get install g++ python3-pip python3.7-dev git  -y
 RUN ln -s /usr/bin/python3.7 /usr/bin/python
 ENV DEBIAN_FRONTEND=noninteractive
@@ -13,7 +13,9 @@ RUN python -m pip install scikit-image -i https://pypi.tuna.tsinghua.edu.cn/simp
 RUN python -m pip install ipython -i https://pypi.tuna.tsinghua.edu.cn/simple
 RUN python -m pip install attr -i https://pypi.tuna.tsinghua.edu.cn/simple
 RUN python -m pip install jittor -i https://pypi.tuna.tsinghua.edu.cn/simple
-RUN python -m jittor.test.test_example
+RUN python -m jittor.test.test_cudnn_op
+RUN export DISABLE_MULTIPROCESSING=1
+
 
 COPY . /workspace
 # 确定容器启动时程序运行路径

@@ -14,13 +14,15 @@ from config import assert_and_infer_cfg
 from optimizer import restore_snapshot
 
 import network
-from datasets import GAOFENIMG,GAOFENSAR
+from datasets import GAOFENIMG, GAOFENSAR
+
+jt.flags.use_cuda = 1
 
 input_path = sys.argv[1]
 output_path = sys.argv[2]
 del sys.argv[1]
 del sys.argv[1]
-print(input_path,output_path)
+print(input_path, output_path)
 
 parser = argparse.ArgumentParser(description='test')
 parser.add_argument('--dump_images', action='store_true', default=False)
@@ -31,7 +33,8 @@ parser.add_argument('--dist_bn', action='store_true', default=False)
 parser.add_argument('--profile', action='store_true', default=False)
 parser.add_argument('--fixed_aspp_pool', action='store_true', default=False,
                     help='fix the aspp image-level pooling size to 105')
-parser.add_argument('--dataset_cls', type=str, default='cityscapes', help='cityscapes')
+parser.add_argument('--dataset_cls', type=str,
+                    default='cityscapes', help='cityscapes')
 parser.add_argument('--sliding_overlap', type=float, default=1 / 3)
 parser.add_argument('--no_flip', action='store_true', default=False,
                     help='disable flipping')
@@ -59,7 +62,8 @@ parser.add_argument('--batch_size', type=int, default=1,
 parser.add_argument('--maxpool_size', type=int, default=9)
 parser.add_argument('--avgpool_size', type=int, default=9)
 parser.add_argument('--edge_points', type=int, default=32)
-parser.add_argument('--match_dim', default=64, type=int, help='dim when match in pfnet')
+parser.add_argument('--match_dim', default=64, type=int,
+                    help='dim when match in pfnet')
 parser.add_argument('--ignore_background', action='store_true', help='whether to ignore background class when '
                                                                      'generating coarse mask in pfnet')
 parser.add_argument('--input_path', type=str, default=None)
@@ -69,21 +73,24 @@ args = parser.parse_args()
 args.input_path = input_path
 args.output_path = output_path
 args.dump_images = True
-args.arch = 'network.pointflow_resnet_with_max_avg_pool.DeepR50_PF_maxavg_deeply'
+# args.arch = 'network.pointflow_resnet_with_max_avg_pool.DeepR50_PF_maxavg_deeply'
+args.arch = 'network.pointflow_resnet_with_max_avg_pool.DeepR2N101_PF_maxavg_deeply'
 args.single_scale = True
 args.scales = 1.0
 args.cv_split = 0
 args.maxpool_size = 14
 args.avgpool_size = 9
 args.edge_points = 128
-args.match_dim = 64
+args.match_dim = 128
 args.no_flip = False
 args.dataset_cls = GAOFENIMG
-args.snapshot = 'best_epoch_62_mean-iu_0.95843.pkl'
+args.snapshot = 'last_epoch_63_mean-iu_0.95869.pkl'
+# args.snapshot = 'last_epoch_63_mean-iu_0.98570.pkl'
 
 assert_and_infer_cfg(args, train_mode=False)
 mean_std = ([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
 date_str = str(datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
+
 
 def inference_whole(model, img, scales):
     """
@@ -110,7 +117,8 @@ def inference_whole(model, img, scales):
             with jt.no_grad():
                 input = jt.Var(image).unsqueeze(0)
                 scale_out = model(input)
-                scale_out = nn.upsample(scale_out, size=(origh, origw), mode="bilinear", align_corners=True)
+                scale_out = nn.upsample(scale_out, size=(
+                    origh, origw), mode="bilinear", align_corners=True)
                 scale_out = scale_out.squeeze(0).numpy()
                 if flip:
                     scale_out = scale_out[:, :, ::-1]
@@ -147,10 +155,12 @@ class RunEval():
 
         prediction_pre_argmax_collection = inference_whole(net, imgs, scales)
 
-        prediction_pre_argmax = np.mean(prediction_pre_argmax_collection, axis=0)
+        prediction_pre_argmax = np.mean(
+            prediction_pre_argmax_collection, axis=0)
         prediction = np.argmax(prediction_pre_argmax, axis=0)
         if self.write_image:
             cv2.imwrite(pred_img_name, prediction*255)
+
 
 def main():
     if args.single_scale:
@@ -169,17 +179,20 @@ def main():
     net = get_net()
 
     image_names = os.listdir(args.input_path)
-    output_names = [i.replace('.tif', '').replace('.png', '') for i in image_names]
-    images = [os.path.join(args.input_path,i) for i in image_names]
-    
+    output_names = [i.replace('.tif', '').replace('.png', '')
+                    for i in image_names]
+    images = [os.path.join(args.input_path, i) for i in image_names]
+
     # Run Inference!
     for idx in range(len(output_names)):
         img_names = output_names[idx]
         img = Image.open(images[idx]).convert('RGB')
 
         runner.inf(img, img_names, net, scales)
+        print(idx, '/', len(output_names))
         if idx > 5 and args.test_mode:
             break
+
 
 if __name__ == '__main__':
     main()

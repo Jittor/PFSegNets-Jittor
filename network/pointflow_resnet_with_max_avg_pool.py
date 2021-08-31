@@ -5,6 +5,7 @@ from network.nn.point_flow import PointFlowModuleWithMaxAvgpool
 from network import resnet_d as Resnet_Deep
 from jittor.models.res2net import res2net101_26w_4s
 
+
 def conv3x3(in_planes, out_planes, stride=1):
     return nn.Conv(in_planes, out_planes, 3, stride=stride, padding=1, bias=False)
 
@@ -33,7 +34,7 @@ class UperNetAlignHeadMaxAvgpool(nn.Module):
                 conv3x3_bn_relu(fpn_dim, fpn_dim, 1)))
 
             self.fpn_out_align.append(PointFlowModuleWithMaxAvgpool(
-                    fpn_dim, dim=reduce_dim, maxpool_size=max_pool_size, avgpool_size=avgpool_size, edge_points=edge_points))
+                fpn_dim, dim=reduce_dim, maxpool_size=max_pool_size, avgpool_size=avgpool_size, edge_points=edge_points))
             if self.fpn_dsn:
                 self.dsn.append(nn.Sequential(nn.Conv(fpn_dim, fpn_dim, 3, stride=1, padding=1), norm_layer(
                     fpn_dim), nn.ReLU(), nn.Dropout(p=0.1), nn.Conv(fpn_dim, num_class, 1, stride=1, padding=0, bias=True)))
@@ -84,7 +85,7 @@ class AlignNetResNetMaxAvgpool(nn.Module):
         elif (trunk == 'resnet-101-deep'):
             resnet = Resnet_Deep.resnet101()
         elif (trunk == 'res2net-101-deep'):
-            resnet = res2net101_26w_4s(pretrained=True)    
+            resnet = res2net101_26w_4s(pretrained=True)
         else:
             raise ValueError('Not a valid network arch')
         resnet.layer0 = nn.Sequential(
@@ -137,7 +138,6 @@ def DeepR101_PF_maxavg_deeply(num_classes, criterion, reduce_dim=64, max_pool_si
 def DeepR50_PF_maxavg_deeply(num_classes, criterion, reduce_dim=64, max_pool_size=8, avgpool_size=8, edge_points=32):
     return AlignNetResNetMaxAvgpool(num_classes, trunk='resnet-50-deep', criterion=criterion, variant='D', skip='m1', reduce_dim=reduce_dim, max_pool_size=max_pool_size, avgpool_size=avgpool_size, edge_points=edge_points)
 
+
 def DeepR2N101_PF_maxavg_deeply(num_classes, criterion, reduce_dim=64, max_pool_size=8, avgpool_size=8, edge_points=32):
     return AlignNetResNetMaxAvgpool(num_classes, trunk='res2net-101-deep', criterion=criterion, variant='D', skip='m1', reduce_dim=reduce_dim, max_pool_size=max_pool_size, avgpool_size=avgpool_size, edge_points=edge_points)
-
-
