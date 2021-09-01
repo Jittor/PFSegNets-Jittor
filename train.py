@@ -254,6 +254,7 @@ def train(train_loader, net, optim, curr_epoch, writer):
         if i > 5 and args.test_mode:
             return
 
+
 @jt.single_process_scope()
 def validate(val_loader, net, criterion, optim, curr_epoch, writer):
     """

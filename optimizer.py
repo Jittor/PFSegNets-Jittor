@@ -1,6 +1,3 @@
-"""
-Pytorch Optimizer and Scheduler Related Task
-"""
 import math
 import jittor as jt
 from jittor import optim
