@@ -107,7 +107,10 @@ sh train_iSAID_pfnet_r50.sh
   ```
 - Training:
 
+  Download res2net pretrained [model](https://drive.google.com/file/d/1GTGRBup27WYbKjRQP0gRZzGcpIPkkDiP/view?usp=sharing) to pretrain/res2net101_26w_4s-02a759a1.pkl
+  
   To participate in which competition, use the corresponding script to train.
+  
   ```shell
   sh train_gfimg_pfnet_r2n101.sh
   sh train_gfsar_pfnet_r2n101.sh

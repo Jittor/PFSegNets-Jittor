@@ -251,6 +251,18 @@ def evaluate_eval(args, net, optimizer, val_loss, hist, dump_images, writer, epo
                             args.best_record['fwavacc'], args.best_record['epoch']))
     logging.info('-' * 107)
 
+    print('-' * 107, flush=True)
+    fmt_str = '[epoch %d], [val loss %.5f], [acc %.5f], [acc_cls %.5f], ' +\
+              '[mean_iu %.5f], [fwavacc %.5f]'
+    print(fmt_str % (epoch, val_loss.avg,
+                     acc, acc_cls, mean_iu, fwavacc), flush=True)
+    fmt_str = 'best record: [val loss %.5f], [acc %.5f], [acc_cls %.5f], ' +\
+              '[mean_iu %.5f], [fwavacc %.5f], [epoch %d], '
+    print(fmt_str % (args.best_record['val_loss'], args.best_record['acc'],
+                     args.best_record['acc_cls'], args.best_record['mean_iu'],
+                     args.best_record['fwavacc'], args.best_record['epoch']), flush=True)
+    print('-' * 107, flush=True)
+
     # tensorboard logging of validation phase metrics
 
     writer.add_scalar('training/acc', acc, epoch)

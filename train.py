@@ -3,7 +3,6 @@ from __future__ import division
 import argparse
 import logging
 import numpy as np
-import torch
 import jittor as jt
 
 from config import cfg, assert_and_infer_cfg
@@ -15,6 +14,7 @@ import network
 import optimizer
 
 jt.flags.use_cuda = 1
+
 # Argument Parser
 parser = argparse.ArgumentParser(description='Semantic Segmentation')
 parser.add_argument('--lr', type=float, default=0.002)
@@ -243,7 +243,7 @@ def train(train_loader, net, optim, curr_epoch, writer):
                     optim.param_groups[-1]['lr'])
 
             logging.info(msg)
-            print(msg)
+            print(msg, flush=True)
 
             # Log tensorboard metrics for each iteration of the training phase
             writer.add_scalar('training/loss', (train_main_loss.val),

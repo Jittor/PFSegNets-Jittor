@@ -85,7 +85,9 @@ class AlignNetResNetMaxAvgpool(nn.Module):
         elif (trunk == 'resnet-101-deep'):
             resnet = Resnet_Deep.resnet101()
         elif (trunk == 'res2net-101-deep'):
-            resnet = res2net101_26w_4s(pretrained=True)
+            resnet = res2net101_26w_4s()
+            resnet.load_parameters(
+                jt.load('pretrain/res2net101_26w_4s-02a759a1.pkl'))
         else:
             raise ValueError('Not a valid network arch')
         resnet.layer0 = nn.Sequential(
