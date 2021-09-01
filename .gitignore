@@ -38,6 +38,6 @@ event*
 log*
 debug/
 
-gaofen/
-GAOFENIMG/
-GAOFENSAR/
+gaofen
+GAOFENIMG
+GAOFENSAR
