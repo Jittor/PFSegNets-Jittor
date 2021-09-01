@@ -37,3 +37,7 @@ tools/pods_train
 event*
 log*
 debug/
+
+gaofen/
+GAOFENIMG/
+GAOFENSAR/
