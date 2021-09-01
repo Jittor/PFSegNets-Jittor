@@ -1,6 +1,78 @@
 # PFSegNets-Jittor
 ![](./images/1)
 ![](./images/2)
+
+
+# GAOFEN Contest
+- Dataset preparation
+
+  The img folder is the data segmented by visible light sea ice, and sar is the data segmented by the sar fishing ground. All is all data, train and val are training set and validation set divided according to a certain ratio (you can divide it by yourself). Image is the corresponding picture, the suffix is tif (visible light segmentation) or png (sar segmentation), gt is the corresponding annotation file suffix is png
+  ```shell
+  gaofen
+  ├── img
+  │   ├── all
+  │   │   ├── gt
+  │   │   └── image
+  │   ├── train
+  │   │   ├── gt
+  │   │   └── image
+  │   └── val
+  │       ├── gt
+  │       └── image
+  └── sar
+      ├── all
+      │   ├── gt
+      │   └── image
+      ├── train
+      │   ├── gt
+      │   └── image
+      └── val
+          ├── gt
+          └── image
+  ```
+
+- Modify the data path in the config.py to the correct path (if you only train SAR, you can modify only SAR)
+  ```shell
+  __C.DATASET.GAOFENSAR ='gaofen/sar'
+  __C.DATASET.GAOFENIMG ='gaofen/img'
+  ```
+- Training:
+
+  Download res2net pretrained [model](https://drive.google.com/file/d/1GTGRBup27WYbKjRQP0gRZzGcpIPkkDiP/view?usp=sharing) to pretrain/res2net101_26w_4s-02a759a1.pkl
+  
+  To participate in which competition, use the corresponding script to train.
+  
+  ```shell
+  sh train_gfimg_pfnet_r2n101.sh
+  sh train_gfsar_pfnet_r2n101.sh
+  ```
+
+  In the sea ice target monitoring competition in the visible light image of Ocean-facing One, the submission got a score of 96.1223.
+
+  In the high-resolution SAR image of the offshore fish farm segmentation data set, the submission got a score of 97.0155.
+
+- Test
+
+  Fill in the model path in run.py as the correct path (Different tracks only need to modify this place, the parameter args.dataset_cls = GAOFENIMG, just to pass the number of categories)
+  It is a model test according to the requirements of the competition
+  Example of native test
+  python run.py gaofen/img/val/image test_img/
+
+  - Package into docker and submit the result according to the official prompts (take the sar track as an example)
+    - Package the image (Dockerfile is in the current directory)
+      ```
+      sudo docker build -t pfnet_sar.
+      ```
+    - (Optional) Local test
+      ```shell
+      sudo docker run --rm -it --networknon --gpus all -v gaofen/sar/val/image:/input_path -v test_img:/output_path pfnet_sar
+      ```
+    - Upload to Alibaba Cloud
+      ```shell
+      sudo docker tag pfnet_sar registry.cn-beijing.aliyuncs.com/xxx/xxx:pfnet_sar
+      sudo docker push registry.cn-beijing.aliyuncs.com/xxx/xxx:pfnet_sar
+      ```
+
 # Introduction
 This repo contains the the implementation of CVPR-2021 work: PointFlow: Flowing Semantics Through Points for Aerial Image Segmentation by Jittor
 # Install
@@ -72,75 +144,6 @@ For example, when training PFNet on iSAID dataset:
 sh train_iSAID_pfnet_r50.sh
 ```
 
-# GAOFEN Contest
-- Dataset preparation
-
-  The img folder is the data segmented by visible light sea ice, and sar is the data segmented by the sar fishing ground. All is all data, train and val are training set and validation set divided according to a certain ratio (you can divide it by yourself). Image is the corresponding picture, the suffix is tif (visible light segmentation) or png (sar segmentation), gt is the corresponding annotation file suffix is png
-  ```shell
-  gaofen
-  ├── img
-  │   ├── all
-  │   │   ├── gt
-  │   │   └── image
-  │   ├── train
-  │   │   ├── gt
-  │   │   └── image
-  │   └── val
-  │       ├── gt
-  │       └── image
-  └── sar
-      ├── all
-      │   ├── gt
-      │   └── image
-      ├── train
-      │   ├── gt
-      │   └── image
-      └── val
-          ├── gt
-          └── image
-  ```
-
-- Modify the data path in the config.py to the correct path (if you only train SAR, you can modify only SAR)
-  ```shell
-  __C.DATASET.GAOFENSAR ='gaofen/sar'
-  __C.DATASET.GAOFENIMG ='gaofen/img'
-  ```
-- Training:
-
-  Download res2net pretrained [model](https://drive.google.com/file/d/1GTGRBup27WYbKjRQP0gRZzGcpIPkkDiP/view?usp=sharing) to pretrain/res2net101_26w_4s-02a759a1.pkl
-  
-  To participate in which competition, use the corresponding script to train.
-  
-  ```shell
-  sh train_gfimg_pfnet_r2n101.sh
-  sh train_gfsar_pfnet_r2n101.sh
-  ```
-
-  In the sea ice target monitoring competition in the visible light image of Ocean-facing One, the submission got a score of 96.1223.
-
-  In the high-resolution SAR image of the offshore fish farm segmentation data set, the submission got a score of 97.0155.
-
-- Test
-
-  Fill in the model path in run.py as the correct path (Different tracks only need to modify this place, the parameter args.dataset_cls = GAOFENIMG, just to pass the number of categories)
-  It is a model test according to the requirements of the competition
-  Example of native test
-  python run.py gaofen/img/val/image test_img/
-
-  - Package into docker and submit the result according to the official prompts (take the sar track as an example)
-    - Package the image (Dockerfile is in the current directory)
-      ```
-      sudo docker build -t pfnet_sar.
-      ```
-    - (Optional) Local test
-      ```shell
-      sudo docker run --rm -it --networknon --gpus all -v gaofen/sar/val/image:/input_path -v test_img:/output_path pfnet_sar
-      ```
-    - Upload to Alibaba Cloud
-      ```shell
-      sudo docker tag pfnet_sar registry.cn-beijing.aliyuncs.com/xxx/xxx:pfnet_sar
-      sudo docker push registry.cn-beijing.aliyuncs.com/xxx/xxx:pfnet_sar
-      ```
 # Citation
 If you find this repo is helpful to your research. Please consider cite our work.
 
