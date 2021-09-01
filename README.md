@@ -108,21 +108,35 @@ sh train_iSAID_pfnet_r50.sh
 
   To participate in which competition, use the corresponding script to train.
   ```shell
-  sh train_gfimg_pfnet_r50.sh
-  sh train_gfsar_pfnet_r50.sh
+  sh train_gfimg_pfnet_r2n101.sh
+  sh train_gfsar_pfnet_r2n101.sh
   ```
 
-  In the sea ice target monitoring competition in the visible light image of Ocean-facing One, on the verification set divided by itself, it reached about miou 0.88.
+  In the sea ice target monitoring competition in the visible light image of Ocean-facing One, the submission got a score of 96.1223.
 
-  In the high-resolution SAR image of the offshore fish farm segmentation data set, on the self-divided verification set, it reached about miou 0.96.
+  In the high-resolution SAR image of the offshore fish farm segmentation data set, the submission got a score of 97.0155.
 
 - Test
 
-  Fill the model path in run.py with the correct path,
+  Fill in the model path in run.py as the correct path (Different tracks only need to modify this place, the parameter args.dataset_cls = GAOFENIMG, just to pass the number of categories)
   It is a model test according to the requirements of the competition
-  
   Example of native test
   python run.py gaofen/img/val/image test_img/
+
+  - Package into docker and submit the result according to the official prompts (take the sar track as an example)
+    - Package the image (Dockerfile is in the current directory)
+      ```
+      sudo docker build -t pfnet_sar.
+      ```
+    - (Optional) Local test
+      ```shell
+      sudo docker run --rm -it --networknon --gpus all -v gaofen/sar/val/image:/input_path -v test_img:/output_path pfnet_sar
+      ```
+    - Upload to Alibaba Cloud
+      ```shell
+      sudo docker tag pfnet_sar registry.cn-beijing.aliyuncs.com/xxx/xxx:pfnet_sar
+      sudo docker push registry.cn-beijing.aliyuncs.com/xxx/xxx:pfnet_sar
+      ```
 # Citation
 If you find this repo is helpful to your research. Please consider cite our work.
 
