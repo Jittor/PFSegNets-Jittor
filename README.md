@@ -1,6 +1,6 @@
 # PFSegNets-Jittor
-![](./images/1.png)
-![](./images/2.png)
+![](./images/1)
+![](./images/2)
 # Introduction
 This repo contains the the implementation of CVPR-2021 work: PointFlow: Flowing Semantics Through Points for Aerial Image Segmentation by Jittor
 # Install
