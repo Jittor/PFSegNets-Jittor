@@ -15,6 +15,7 @@ RUN python -m pip install attr -i https://pypi.tuna.tsinghua.edu.cn/simple
 RUN python -m pip install jittor -i https://pypi.tuna.tsinghua.edu.cn/simple
 RUN python -m jittor.test.test_cudnn_op
 RUN export DISABLE_MULTIPROCESSING=1
+ENV DISABLE_MULTIPROCESSING=1
 
 COPY . /workspace
 WORKDIR /workspace

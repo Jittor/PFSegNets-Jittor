@@ -84,8 +84,7 @@ args.match_dim = 64
 
 args.no_flip = False
 args.dataset_cls = GAOFENIMG
-args.snapshot = 'last_epoch_63_mean-iu_0.95869.pkl'
-# args.snapshot = 'last_epoch_63_mean-iu_0.98570.pkl'
+args.snapshot = 'last_epoch_63_mean-iu_0.97659.pkl'
 
 assert_and_infer_cfg(args, train_mode=False)
 mean_std = ([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])

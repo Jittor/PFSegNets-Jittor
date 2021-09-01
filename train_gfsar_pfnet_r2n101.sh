@@ -2,7 +2,7 @@
 now=$(date +"%Y%m%d_%H%M%S")
 EXP_DIR=./GAOFENSAR/
 mkdir -p ${EXP_DIR}
-CUDA_VISIBLE_DEVICES=0 python train.py \
+CUDA_VISIBLE_DEVICES=2 python train.py \
   --dataset GAOFENSAR \
   --cv 0 \
   --arch network.pointflow_resnet_with_max_avg_pool.DeepR2N101_PF_maxavg_deeply \
