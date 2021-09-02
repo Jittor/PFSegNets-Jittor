@@ -37,8 +37,6 @@
   __C.DATASET.GAOFENIMG ='gaofen/img'
   ```
 - Training:
-
-  Download res2net pretrained [model](https://drive.google.com/file/d/1GTGRBup27WYbKjRQP0gRZzGcpIPkkDiP/view?usp=sharing) to pretrain/res2net101_26w_4s-02a759a1.pkl
   
   To participate in which competition, use the corresponding script to train.
   
