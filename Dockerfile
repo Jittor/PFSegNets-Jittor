@@ -19,7 +19,7 @@ ENV DISABLE_MULTIPROCESSING=1
 COPY . /workspace
 WORKDIR /workspace
 RUN rm /usr/bin/python3 && ln -s /usr/bin/python3.7 /usr/bin/python3
-# 用来在build的时候，把模型下载到本地
-# RUN python -c "from jittor.models.res2net import res2net101_26w_4s;resnet = res2net101_26w_4s(pretrained=True)"
+# 用来在build的时候，把模型下载到本地，因为在提交测试时，是断网测试，所以需要将模型提前下载好。
+RUN python -c "from jittor.models.res2net import res2net101_26w_4s;resnet = res2net101_26w_4s(pretrained=True)"
 
 CMD ["python", "run.py", "/input_path", "/output_path"]
