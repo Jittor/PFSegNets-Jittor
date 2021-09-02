@@ -146,6 +146,24 @@ sh train_iSAID_pfnet_r50.sh
 If you find this repo is helpful to your research. Please consider cite our work.
 
 ```
+@article{hu2020jittor,
+  title={Jittor: a novel deep learning framework with meta-operators and unified graph execution},
+  author={Hu, Shi-Min and Liang, Dun and Yang, Guo-Ye and Yang, Guo-Wei and Zhou, Wen-Yang},
+  journal={Science China Information Sciences},
+  volume={63},
+  number={222103},
+  pages={1--21},
+  year={2020}
+}
+
+@article{gao2019res2net,
+  title={Res2Net: A New Multi-scale Backbone Architecture},
+  author={Gao, Shang-Hua and Cheng, Ming-Ming and Zhao, Kai and Zhang, Xin-Yu and Yang, Ming-Hsuan and Torr, Philip},
+  journal={IEEE TPAMI},
+  year={2020},
+  doi={10.1109/TPAMI.2019.2938758}, 
+}
+
 @inproceedings{li2021pointflow,
   title={PointFlow: Flowing Semantics Through Points for Aerial Image Segmentation},
   author={Li, Xiangtai and He, Hao and Li, Xia and Li, Duo and Cheng, Guangliang and Shi, Jianping and Weng, Lubin and Tong, Yunhai and Lin, Zhouchen},
