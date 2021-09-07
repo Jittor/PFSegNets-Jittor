@@ -109,17 +109,17 @@ Actually, the order of steps 2 and 3 is interchangeable.
 
 ## Pretrained Models
 
-Baidu Pan Link: https://pan.baidu.com/s/1MWzpkI3PwtnEl1LSOyLrLw  4lwf 
+Baidu Pan Link: https://pan.baidu.com/s/1uzZngYI6AdDDx9ptLqgtAg up5o
 
-Google Drive Link: https://drive.google.com/drive/folders/1C7YESlSnqeoJiR8DWpmD4EVWvwf9rreB?usp=sharing
+Google Drive Link: https://drive.google.com/drive/folders/1MUeKgapkvpuwwO_InXnjUhHMVZdPgGTl?usp=sharing
 
 After downloading the pretrained ResNet, you can either change the model path of `network/resnet_d.py` or do the soft link according to the default path in `network/resnet_d.py`.
 
 For example, 
-Suppose you store the pretrained ResNet50 model at `~/username/pretrained_model/resnet50-deep.pth`, please update the 
+Suppose you store the pretrained ResNet50 model at `~/username/pretrained_model/resnet50-deep.pkl`, please update the 
 dataset path in Line315 of `config.py`,
 ```
-model.load_parameters(jt.load("~/username/pretrained_model/resnet50-deep.pth"))
+model.load_parameters(jt.load("~/username/pretrained_model/resnet50-deep.pkl"))
 ```
 Or, you can link the pretrained model path into current folder.
 ```
