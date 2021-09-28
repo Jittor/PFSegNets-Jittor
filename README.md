@@ -61,7 +61,7 @@
       ```
       sudo docker build -t pfnet_sar.
       ```
-    - (Optional) Local test
+    - Local test
       ```shell
       sudo docker run --rm -it --networknon --gpus all -v gaofen/sar/val/image:/input_path -v test_img:/output_path pfnet_sar
       ```
